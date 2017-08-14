@@ -1,0 +1,30 @@
+{
+  "name": "cursorengine",
+  "private": true,
+  "version": "0.1.0",
+  "description": "cursorengine.com",
+  "author": "CursorEngine",
+  "main": "server/cursorengine.js",
+  "scripts": {
+    "start": "node server/cursorengine.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "dependencies": {
+    "body-parser": "1.15.1",
+    "bunyan": "1.8.1",
+    "bunyan-nodemailer": "0.0.1",
+    "compression": "1.6.2",
+    "ejs": "2.4.1",
+    "express": "4.13.4",
+    "glob": "6.0.4",
+    "lodash": "4.12.0",
+    "nodemailer": "2.4.2"
+  },
+  "devDependencies": {
+    "expect.js": "^0.3.1",
+    "mocha": "3.4.2"
+  }
+}

@@ -1,0 +1,15 @@
+{
+  "apps" : [{
+    "name"               : "cursorengine",
+    "script"             : "server/cursorengine.js",
+    "node_args"          : ["--inspect"],
+    "exec_mode"          : "fork",
+    "max_memory_restart" : "100M",
+    "merge_logs"         : true,
+    "watch"              : ["server"],
+    "ignore_watch"       : ["server/node_modules"],
+    "watch_options"      : {
+        "usePolling": true
+    }
+  }]
+}

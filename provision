@@ -1,0 +1,239 @@
+#!/bin/bash
+
+usage(){
+cat << EOF
+usage: $0 options
+
+This please choose which provision to run.
+
+OPTIONS:
+   -h      Show this message
+   -s      Site
+   -e      Environment
+EOF
+}
+
+begin(){
+    export site='cursorengine'
+    export log='/tmp/provision.log'	
+    export environment='development'
+    export home='/root'
+
+    touch $log
+    echo > $log # clear log
+      
+    local OPTIND
+    while getopts ":hs:p:e:" opt; do
+        case "${opt}" in
+            h)
+                usage
+                exit 1
+                ;;
+            s)
+                message "Site set to: ${OPTARG}"
+                ;;
+            e)
+                message "Environment set to: ${OPTARG}"
+                environment=( ${OPTARG} )
+                ;;
+            \?)
+                message "Invalid option: -${OPTARG}"
+                usage
+                exit 1
+                ;;
+            :)
+                message "Option -${OPTARG} requires an argument."
+                usage
+                exit 1
+                ;;
+            esac
+    done
+    shift $(( OPTIND - 1 ));
+}
+
+log() {
+    echo "$1" >> $log
+}
+
+message() {
+    echo "$1"
+    echo "$1" >> $log
+}
+
+is_installed() {
+    if which "$1" > /dev/null; then
+        true
+    else
+        false
+    fi
+}
+
+install() {
+    if ! is_installed "$1"; then
+        apt-get install --yes --force-yes "$1" >> $log
+        message "[+] installed $1"
+    else
+        message "[-] $1 already installed"
+    fi
+}
+
+setHome(){
+    if [ "$environment" != "production" ]; then
+        home='/home/ubuntu'
+    fi
+    message "[+] home set to $home"
+}
+
+provisionSwap(){
+    if ! swapon -s | grep /swapfile > /dev/null; then 
+        message '[+] Provisioning swap'
+        dd if=/dev/zero of=/swapfile bs=1024 count=256k >> $log
+        mkswap /swapfile >> $log
+        swapon /swapfile >> $log
+        echo '/swapfile       none    swap    sw      0       0' >> /etc/fstab
+        echo 10 | tee /proc/sys/vm/swappiness
+        echo vm.swappiness = 10 | tee -a /etc/sysctl.conf
+        chown root:root /swapfile 
+        chmod 0600 /swapfile
+        message '[!] swap provisioned'
+    else
+        message '[-] swap already provisioned'
+    fi
+}
+
+provisionApt(){
+    message '[+] Provisioning apt'
+    apt-get update >> $log
+    message '[!] apt provisioned'
+}
+
+provisionWww(){
+    message '[+] Adding www'
+    if [ ! -d /var/www ]; then
+        mkdir /var/www
+        message '[!] www added'
+    else
+        message '[-] www already exists'
+    fi
+
+    message "[!] Adding /var/www/$site"
+    if [ ! -d "/var/www/$site" ]; then
+        mkdir "/var/www/$site"
+        message "[!] Added /var/www/$site"
+    else
+        message "[-] /var/www/$site already exists"
+    fi
+}
+
+provisionGit(){
+    message '[+] Provisioning git'
+    install git
+}
+
+provisionNode(){
+    message '[+] Provisioning nodejs'
+    if ! is_installed node; then
+        message '[+] Installing nodejs'
+        wget https://nodejs.org/dist/v6.10.3/node-v6.10.3-linux-x64.tar.xz >> $log
+        tar -C /usr/local --strip-components 1 -xJf node-v6.10.3-linux-x64.tar.xz >> $log
+        message '[!] nodejs installed'
+    else
+        message '[-] nodejs already installed'
+    fi
+    
+}
+
+provisionPM2(){
+    message '[+] Provisioning pm2'
+    if ! is_installed pm2; then
+        message '[+] Installing pm2'
+        npm install pm2 -g >> $log
+        pm2 startup ubuntu >> $log
+        message '[!] pm2 installed'
+    else
+        message '[-] pm2 already installed'
+    fi
+}
+
+provisionSite(){
+    message "[+] Provisioning $site"
+
+    if [ ! -d "$home/.provisioned" ]; then
+        message '[+] Adding bitbucket.org to known_hosts'
+        ssh-keyscan -H bitbucket.org >> "$home/.ssh/known_hosts"
+        message '[!] Added bitbucket.org to known_hosts'
+
+        message '[+] Adding provisioned file'
+        echo 'provisioned' > "$home/.provisioned"
+        message '[!] Added provisioned file'
+
+        if [ ! -d "$home/.ssh/id_rsa" ]; then
+            message '[+] Adding id_rsa'
+            curl --user 'jzumbrun+cursorengine@gmail.com:#!123BBCURSORENGINE321!#' 'https://bitbucket.org/!api/2.0/snippets/cursorengine/Xoj56A/80eade0607ed9e72d44e1de8652262592587c6ba/files/id_rsa' > "$home/.ssh/id_rsa"
+            chmod 0600 "$home/.ssh/id_rsa"
+            message '[!] Added id_rsa'
+        else
+            message '[-] id_rsa already exists'
+        fi
+
+        if [ ! -d "$home/.ssh/id_rsa.pub" ]; then
+            message '[+] Adding id_rsa.pub'
+            curl --user 'jzumbrun+cursorengine@gmail.com:#!123BBCURSORENGINE321!#' 'https://bitbucket.org/!api/2.0/snippets/cursorengine/Xoj56A/80eade0607ed9e72d44e1de8652262592587c6ba/files/id_rsa.pub' > "$home/.ssh/id_rsa.pub"
+            chmod 0600 "$home/.ssh/id_rsa.pub"
+            message '[!] Added id_rsa.pub'
+        else
+            message '[-] id_rsa.pub already exists'
+        fi
+
+        if [ "$environment" = "development" ]; then
+            if [ ! -d "$home/.ssh/cursorengine" ]; then
+                message '[+] Adding cursorengine'
+                curl --user 'jzumbrun+cursorengine@gmail.com:#!123BBCURSORENGINE321!#' 'https://bitbucket.org/!api/2.0/snippets/cursorengine/Xoj56A/80eade0607ed9e72d44e1de8652262592587c6ba/files/cursorengine' > "$home/.ssh/cursorengine"
+                chmod 0600 "$home/.ssh/cursorengine"
+                message '[!] Added cursorengine'
+            else
+                message '[-] cursorengine already exists'
+            fi
+
+            if [ ! -d "$home/.ssh/config" ]; then
+                message '[+] Adding config'
+                curl --user 'jzumbrun+cursorengine@gmail.com:#!123BBCURSORENGINE321!#' 'https://bitbucket.org/!api/2.0/snippets/cursorengine/Xoj56A/80eade0607ed9e72d44e1de8652262592587c6ba/files/config' > "$home/.ssh/config"
+                message '[!] Added config'
+            else
+                message '[-] config already exists'
+            fi
+        else
+            message '[-] config ignored'
+        fi
+
+    else
+        message '[-] .provisioned already exists'
+    fi
+
+    message "[!] Provisioned $site"
+}
+
+provision(){
+    
+    message '[+] Provisioning...'
+    setHome
+    provisionSwap
+    provisionApt
+    provisionWww
+    provisionGit
+    provisionNode
+    provisionPM2
+    provisionSite
+}
+
+end(){
+    message '[!] Provision Complete [!]'
+    exit 0
+}
+
+# calls
+begin "$@"
+
+provision
+
+end
