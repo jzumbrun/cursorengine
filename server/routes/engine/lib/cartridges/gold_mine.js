@@ -13,6 +13,7 @@ var gameData = {
 		'MineEntrance' : {
 			firstVisit : true,
 			displayName : 'Mine Entrance',
+			image : 'http://ekalatours.com/wp-content/uploads/ekala-eco-tours-Gold-mine-tours-25.jpg',
 			description : 'You stand at the partially collapsed entrance to the mine. Nearby there is a sign sticking out of a pile of miner helmets.',
 			interactables : {
 				helmets : { look : 'It is a pile of miner helmets with lights on them. They seem to still be operational.' },

@@ -2,7 +2,8 @@
 
 const fs = require('fs'),
     config = require('../../../config'),
-    engine = require('../lib/engine');
+    engine = require('../lib/engine'),
+    format = require('../lib/format')
 
 module.exports = (server) => {
 
@@ -13,7 +14,7 @@ module.exports = (server) => {
 
         // Slack
         if(req.body.token == config.chats.slack.token){
-            return res.send(engine.input(req.body.text, req.body.user_id));
+            return res.json(format.slack(engine.input(req.body.text, req.body.user_id)))
         }
 
         return res.send('Chat validation failed.')

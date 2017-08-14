@@ -308,6 +308,11 @@ function getLocationDescription(game, forcedLongDescription){
 	} else {
 		description = currentLocation.displayName;
 	}
+
+	if(currentLocation.image){
+		description = description.concat('{[' + currentLocation.image + ']}')
+	}
+
 	return description;
 }
 
