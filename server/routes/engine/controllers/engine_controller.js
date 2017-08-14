@@ -9,7 +9,7 @@ module.exports = (server) => {
     /**
      * Console
      */
-    server.post('/console', (req, res) => {
+    server.post('/engine', (req, res) => {
 
         // Slack
         if(req.body.token == config.chats.slack.token){
