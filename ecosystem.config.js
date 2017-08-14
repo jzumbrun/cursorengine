@@ -12,7 +12,7 @@ module.exports = {
       user: 'root',
       host: ['cursorengine'],
       ref: 'origin/master',
-      repo: 'git@bitbucket.org:jzumbrun/cursorengine.git',
+      repo: 'git@bitbucket.org:cursorengine/cursorengine.git',
       path: '/var/www/cursorengine',
       'post-deploy': './deploy'
     }
