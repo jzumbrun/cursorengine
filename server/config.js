@@ -14,7 +14,7 @@ config.defaults = {
 
     chats: {
         slack: {
-            token: 'SGAj2Ne94YulwFAKc5UVIdqm'
+            token: 'A1EbXraxCjHNVe044htL9iXC'
         }
     },
 
