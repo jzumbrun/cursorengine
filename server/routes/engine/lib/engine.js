@@ -179,9 +179,19 @@ var actions = {
 		}
 		try {
 			try {
-				return {message: getItem(game.player.inventory, command.subject).description, success: true};
+				var item = getItem(game.player.inventory, command.subject),
+					description = item.description
+				if(item.image){
+					description = '{[' + item.image + ']}'.concat(description)
+				}
+				return {message: description, success: true};
 			} catch (itemNotInInventoryError){
-				return {message: getItem(getCurrentLocation(game).items, command.subject).description, success: true};
+				var item = getItem(getCurrentLocation(game).items, command.subject),
+					description = item.description
+				if(item.image){
+					description = '{[' + item.image + ']}'.concat(description)
+				}
+				return {message: description, success: true};
 			}
 		} catch(isNotAnItemError) {
 			try {
@@ -310,7 +320,7 @@ function getLocationDescription(game, forcedLongDescription){
 	}
 
 	if(currentLocation.image){
-		description = description.concat('{[' + currentLocation.image + ']}')
+		description = '{[' + currentLocation.image + ']}'.concat(description)
 	}
 
 	return description;

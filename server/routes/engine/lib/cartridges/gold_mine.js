@@ -23,6 +23,7 @@ var gameData = {
 			items : {
 				helmet : {
 					displayName : 'Miner Helmet',
+					image : 'https://images-na.ssl-images-amazon.com/images/I/51J%2BdZwF49L.jpg',
 					description : 'A trusty old miner helmet covered in minor dents. Still seems sturdy and the light works.',
 					use : function(){return useLightSource();},
 					quantity : 1,
