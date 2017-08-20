@@ -1,18 +1,22 @@
+// === Word Lists ===
+const skipWords = ['','a','an','at','in','on','the','to'];
+const subjectEndWords = ['on','with','and'];
+
 exports.parse = function (string){
 	// === Prep Input for Processing ===
 	var components = string.toLowerCase();
 	components = components.split(' ');
 
 	// === Create Necessary Variables ===
-	var command = {};
-	var subjectStartIndex;
-	var objectStartIndex;
+	var command = {},
+		subjectStartIndex,
+		objectStartIndex;
 
 	// === Determine Action ===
 	command.action =  components[0];
 
 	// === Determine Subject Start ===
-	for (i=1; i < components.length; ++i){
+	for (let i = 1; i < components.length; ++i){
 		if(skipWords.indexOf(components[i]) === -1){
 			command.subject = components[i];
 			subjectStartIndex = i;
@@ -20,7 +24,7 @@ exports.parse = function (string){
 		}
 	}
 	// === Determine Subject End and Object Start ===
-	for (i=subjectStartIndex+1; i < components.length; ++i){
+	for (let i = subjectStartIndex + 1; i < components.length; ++i){
 		if(subjectEndWords.indexOf(components[i]) !== -1){
 			command.object = '';
 			objectStartIndex = i+1;
@@ -32,7 +36,7 @@ exports.parse = function (string){
 		}
 	}
 	// === Determine End of Object ===
-	for (i=objectStartIndex+1; i<components.length; ++i){
+	for (let i = objectStartIndex + 1; i < components.length; ++i){
 		if (skipWords.indexOf(components[i] === -1)){
 			if(command.object === ''){
 				command.object = command.object.concat(components[i]);
@@ -43,7 +47,3 @@ exports.parse = function (string){
 	}
 	return command;
 };
-
-// === Word Lists ===
-var skipWords = ['','a','an','at','in','on','the','to'];
-var subjectEndWords = ['on','with','and'];

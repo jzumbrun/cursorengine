@@ -1,0 +1,41 @@
+{
+	"mine_entrance" : {
+		"display_name" : "Mine Entrance",
+		"image" : "http://ekalatours.com/wp-content/uploads/ekala-eco-tours-Gold-mine-tours-25.jpg",
+		"description" : "You stand at the partially collapsed entrance to the mine. Nearby there is a sign sticking out of a pile of miner helmets.",
+		"interactables" : {
+			"helmets" : { "look" : "It is a pile of miner helmets with lights on them. They seem to still be operational." },
+			"sign" : { "look" : "The sign reads \"Crooked Gulch Gold Mine\" and has a note tacked to the bottom of it." },
+			"note" : { "look" : "Written in an untidy scroll the note reads \"Generator blew. Lights out.\"" }
+		},
+		"items" : {
+			"helmet" : {
+				"quantity" : -1,
+				"limit" : 1
+			}
+		},
+		"exits" : {
+			"inside" : {
+				"display_name" : "Inside",
+				"destination" : "tunnel"
+			}
+		}
+	},
+	"tunnel" : {
+		"display_name" : "Tunnel",
+		"description" : "It is dimly lit here and look much darker further back.",
+		"exits" : {
+			"outside" : {
+				"display_name" : "Outside",
+				"destination" : "mine_entrance"
+			},
+			"deeper" : {
+				"display_name" : "Deeper",
+				"destination" : "end"
+			}
+		}
+	},
+	"end" : {
+		"description" : "placeholder"
+	}
+}
