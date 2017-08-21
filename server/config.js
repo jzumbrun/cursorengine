@@ -32,7 +32,7 @@ config.defaults = {
 
     // Must me lowecase number/letter combo
     access: '321ce123',
-    graphical: true
+    graphical: false
 }
 
 /** DEVELOPMENT **/
