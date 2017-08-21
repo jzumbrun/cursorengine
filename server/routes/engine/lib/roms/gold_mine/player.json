@@ -7,6 +7,8 @@
     "inventory" : {},
     "light_source" : false,
     "map" : {
-
+        "mine_entrance" : {
+            "visits" : 1
+        }
     }
 }

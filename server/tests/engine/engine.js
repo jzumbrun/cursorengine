@@ -50,9 +50,33 @@ describe('Engine', () => {
     describe('take helmet', () => {
         it('should take the helmet', () => {
             var result = run('take helmet')
-            console.log(result)
             var match = result.match(/helmet taken/g)
             assert.equal(match[0], 'helmet taken')
+        })
+    })
+
+    describe('use helmet', () => {
+        it('should use the helmet', () => {
+            var result = run('use helmet')
+            var match = result.match(/You click on the light/g)
+            assert.equal(match[0], 'You click on the light')
+        })
+    })
+
+    describe('go inside', () => {
+        it('should go inside', () => {
+            var result = run('go inside')
+            var match = result.match(/It is dimly lit here/g)
+            assert.equal(match[0], 'It is dimly lit here')
+        })
+    })
+
+    describe('go deeper', () => {
+        it('should go deeper', () => {
+            var result = run('go deeper')
+            console.log(result)
+            var match = result.match(/You found more gold/g)
+            assert.equal(match[0], 'You found more gold')
         })
     })
 

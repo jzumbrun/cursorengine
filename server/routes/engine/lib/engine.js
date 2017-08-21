@@ -317,14 +317,10 @@ module.exports = class Engine {
      */
     _checkForGameEnd(return_string){
         if(this._player.game_over){
-            return_string = return_string + '\n' + this._game.outro_text
+            return_string = return_string + '\n' + this._rom.info.outro_text
             this._dieAction()
         }
         return return_string
-    }
-
-    _engineInterface(game, command){
-        return actions[this._command.action](game, command)
     }
 
     _exitsToString(exits){
@@ -419,10 +415,23 @@ module.exports = class Engine {
         return description
     }
 
+    /**
+     * Get Item
+     * 
+     * @param {object} location 
+     * @param {string} name 
+     * @return {object}
+     */
     _getItem(location, name){
         return location[this._getItemName(name)]
     }
 
+    /**
+     * Get Item Name
+     * 
+     * @param {string} name 
+     * @return {string}
+     */
     _getItemName(name){
         var return_string = ''
         if(this._rom.items[name]){
@@ -528,6 +537,14 @@ module.exports = class Engine {
         return return_string
     }
 
+    /**
+     * Move Item
+     * 
+     * @param {string} action 
+     * @param {object} start_location 
+     * @param {object} end_location
+     * @return void 
+     */
     _moveItem(action, start_location, end_location){
         // Get the resolved name incase the display name was used
         var name = this._getItemName(this._command.subject)
@@ -560,13 +577,36 @@ module.exports = class Engine {
 
     }
 
+    /**
+     * Action Hook
+     */
+    _actionHook(options){
+        var method = this._command.action + 'Action'
+        if(this._rom.actions[method]){
+            return this._rom.actions[method]({
+                // Mutables
+                player: this._player, 
+                game: this._game,
+                // Immutables
+                options: cloneDeep(options), 
+                rom: cloneDeep(this._rom), 
+                command: cloneDeep(this._command)
+            })
+        }
+        return null
+    }
+
     // ======= Actions =======
 
     /**
      * Die Action
      */
     _dieAction(){
+        // Simply remove the player from the game
         delete this._game.players[this._player.id]
+
+        let action_hook = this._actionHook()
+        if(action_hook) return action_hook
         return 'You are dead'
     }
 
@@ -585,6 +625,8 @@ module.exports = class Engine {
             return_string = this._command.subject + ' dropped'
         }
         
+        let action_hook = this._actionHook({return_string: return_string})
+        if(action_hook) return action_hook
         return return_string
     }
 
@@ -599,7 +641,7 @@ module.exports = class Engine {
             player_destination = null
     
         // Collect exits
-        if(location.exits && location.exits[this._command.subject].destination){
+        if(location.exits && location.exits[this._command.subject] && location.exits[this._command.subject].destination){
             player_destination = location.exits[this._command.subject].destination
          
         }
@@ -613,11 +655,6 @@ module.exports = class Engine {
 
         if(player_destination === null) return 'You can\'t go there.'
 
-        // Call the room teardown
-        if (this._rom.actions[`${player_destination}Teardown`]){
-            this._rom.actions[`${player_destination}Teardown`](this._player, this._game, this._rom)
-        }
-
         // Set the new destination
         this._player.current_location = player_destination
         return_string = this._getLocationDescription()
@@ -626,6 +663,8 @@ module.exports = class Engine {
         if(!this._player.map[player_destination]) this._player.map[player_destination] = {visits: 1}
         else this._player.map[player_destination].visits++
 
+        let action_hook = this._actionHook({return_string: return_string})
+        if(action_hook) return action_hook
         return return_string
     }
 
@@ -633,7 +672,8 @@ module.exports = class Engine {
      * Inventory Action
      */
     _inventoryAction(){
-        var inventory = ''
+        var inventory = '',
+            return_string = ''
 
         forEach(this._player.inventory, (item, name) => {
             var display_name = this._rom.items[name].display_name
@@ -643,10 +683,15 @@ module.exports = class Engine {
             inventory = inventory.concat('\n' + display_name)
         })
         if (!inventory){
-            return 'Your inventory is empty.'
+            return_string = 'Your inventory is empty.'
         } else {
-            return `Your inventory contains: ${inventory}`
+            return_string = `Your inventory contains: ${inventory}`
         }
+
+        let action_hook = this._actionHook({return_string: return_string})
+        if(action_hook) return action_hook
+        return return_string
+
     }
 
     /**
@@ -681,6 +726,8 @@ module.exports = class Engine {
 
         }
 
+        let action_hook = this._actionHook({return_string: return_string})
+        if(action_hook) return action_hook
         return return_string
     }
 
@@ -689,6 +736,7 @@ module.exports = class Engine {
      */
     _takeAction(){
         var return_string = `Best just to leave the ${this._command.subject} as it is.`
+
         if(!this._command.subject) return 'What do you want to take?'
 
         return_string = this._interactWithItem('take', this._command.subject)
@@ -696,10 +744,12 @@ module.exports = class Engine {
         if(!return_string){
             var current_location = this._getCurrentLocation()
             this._moveItem('take', current_location.items, this._player.inventory)
-            return this._command.subject + ' taken'
+            return_string = this._command.subject + ' taken'
 
         }
-        
+
+        let action_hook = this._actionHook({return_string: return_string})
+        if(action_hook) return action_hook
         return return_string
     }
 
@@ -707,19 +757,14 @@ module.exports = class Engine {
      * Use Action
      */
     _useAction(){
-        var return_string = '',
+        var return_string = 'Can\'t do that.',
             name = this._getItemName(this._command.subject),
             method = `use${upperFirst(name)}`
     
         if(!this._command.subject) return 'What would you like to use?'
-        
-        if(name && this._rom.actions[method]){
-            return_string = this._rom.actions[method](this._player, this._game, this._rom)
-        }
-        else{
-            return_string = 'Can\'t do that.'
-        }
 
+        let action_hook = this._actionHook({name: name, return_string: return_string})
+        if(action_hook) return action_hook
         return return_string
 
     }
@@ -753,12 +798,7 @@ module.exports = class Engine {
                 // Increment the players command count
                 this._player.command_counter++
 
-                // Try the rom actions first
-                if(this._rom[method]){
-                    return_string = this._rom[method](this._player, this._game, this._rom, this._engineInterface)
-                }
-                // Then try the engine actions
-                else if(this[method]){
+                if(this[method]){
                     return_string = this[method]()
                 }
 
