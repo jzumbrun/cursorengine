@@ -101,7 +101,7 @@ module.exports = class Engine {
      * @param {object} name
      */
     _setRom(name){
-        _log('_setRom')
+        this._log('_setRom')
         // Once set, do not change it!
         if(this._rom === null){
 
@@ -122,7 +122,7 @@ module.exports = class Engine {
                 Object.freeze(rom)
                 this._rom = rom
             } catch(error){
-                _log(error)
+                this._log(error)
                 // Do nothing
             }
             
@@ -133,7 +133,7 @@ module.exports = class Engine {
      * Set Save
      */
     _setSave(){
-        _log('_setSave')
+        this._log('_setSave')
         // Once set, do not change it!
         if(this._save === null){
 
@@ -145,7 +145,7 @@ module.exports = class Engine {
                 Object.freeze(save)
                 this._save = save
             } catch(error){
-                _log(error)
+                this._log(error)
             }
         }
     }
@@ -155,7 +155,7 @@ module.exports = class Engine {
      * @param {object} game
      */
     _setGame(){
-        _log('_setGame')
+        this._log('_setGame')
         // Merge from save
         if(this._save){
             this._game = cloneDeep(this._save)
@@ -188,7 +188,7 @@ module.exports = class Engine {
      * @return {object}
      */
     _mergeSavedPlayerOntoPlayer(){
-        _log('_mergeSavedPlayerOntoPlayer')
+        this._log('_mergeSavedPlayerOntoPlayer')
         // Keep this as a reference
         this._player = cloneDeep(this._save.players[this._player.id])
         // Maintain the player to game player reference
@@ -200,7 +200,7 @@ module.exports = class Engine {
      * @return {object}
      */
     _mergePlayerOntoSavedPlayers(){
-        _log('_mergePlayerOntoSavedPlayers')
+        this._log('_mergePlayerOntoSavedPlayers')
         // List of players from the save
         var players = cloneDeep(this._save.players)
         
@@ -216,7 +216,7 @@ module.exports = class Engine {
      * @return {object}
      */
     _mergeRomPlayerOntoPlayer(){
-        _log('_mergeRomPlayerOntoPlayer')
+        this._log('_mergeRomPlayerOntoPlayer')
         // Copy of rom player object
         var player = cloneDeep(this._rom.player)
 
@@ -236,7 +236,7 @@ module.exports = class Engine {
      * @return {object}
      */
     _getSavableMapFromRom(){
-        _log('_getSavableMapFromRom')
+        this._log('_getSavableMapFromRom')
         // Savable map
         var savable_map = {},
             // Copy of rom map object
@@ -258,13 +258,13 @@ module.exports = class Engine {
      * @return {string}
      */
     _listRoms(){
-        _log('_listRoms')
+        this._log('_listRoms')
         try{
             var roms = fs.readdirSync(path.resolve(__dirname) + '/roms/').filter((dir) => {
                 return dir && dir[0] != '.'
             })
         }catch(error){
-            _log(error)
+            this._log(error)
             return 'Error loading rom directory.'
         }
 
@@ -288,7 +288,7 @@ module.exports = class Engine {
      * @return {string}
      */
     _loadRom(){
-        _log('_loadRom')
+        this._log('_loadRom')
         if (!this._command.subject) return "Specify game to load."
 
         this._setRom(this._command.subject)
@@ -303,7 +303,7 @@ module.exports = class Engine {
                 fs.writeFileSync(`${path.resolve(__dirname)}/saves/${this._player.id}.json`, JSON.stringify({active_game: this._command.subject}, null, 2))
 
             }catch(error){
-                _log(error)
+                this._log(error)
                 return 'Error loading rom file for ' + this._command.subject
             }
 
@@ -315,18 +315,18 @@ module.exports = class Engine {
     }
 
     _saveGame(){
-        _log('_saveGame')
+        this._log('_saveGame')
         try{
             // Save the player data
             fs.writeFileSync(`${path.resolve(__dirname)}/saves/${this._rom.info.name}.json`, JSON.stringify(this._game, null, 2))
         }catch(error){
-            _log(error)
+            this._log(error)
             return `Error writing ${this._rom.info.name} to file.`
         }
     }
 
     _deleteSavedGame(){
-        _log('_deleteSavedGame')
+        this._log('_deleteSavedGame')
         if (!this._command.subject) return "Specify saved game to delete."
 
         // Delete the saved game
@@ -338,7 +338,7 @@ module.exports = class Engine {
             fs.unlinkSync(`${path.resolve(__dirname)}/saves/${this._command.subject}.json`)
             return `${this._command.subject} deleted.`
         } catch(error) {
-            _log(error)
+            this._log(error)
             return `${this._command.subject} is not a saved game.`
         }
     }
@@ -350,7 +350,7 @@ module.exports = class Engine {
      * @param {string} return_string 
      */
     _checkForGameEnd(return_string){
-        _log('_checkForGameEnd')
+        this._log('_checkForGameEnd')
         if(this._player.game_over){
             return_string = return_string + '\n' + this._rom.info.outro_text
             this._dieAction()
@@ -359,7 +359,7 @@ module.exports = class Engine {
     }
 
     _exitsToString(exits){
-        _log('_exitsToString')
+        this._log('_exitsToString')
         var return_string = ''
 
         if(Object.keys(exits).length === 0) return ''
@@ -400,7 +400,7 @@ module.exports = class Engine {
      * @return {object}
      */
     _getCurrentLocation(){
-        _log('_getCurrentLocation')
+        this._log('_getCurrentLocation')
         return this._rom.map[this._player.current_location]
     }
 
@@ -411,7 +411,7 @@ module.exports = class Engine {
      * @return {integer}
      */
     _getPlayerMapVisits(location){
-        _log('_getPlayerMapVisits')
+        this._log('_getPlayerMapVisits')
         if(this._player.map[location] && this._player.map[location].visits){
             return this._player.map[location].visits
         }
@@ -425,7 +425,7 @@ module.exports = class Engine {
      * @return {string}
      */
     _getLocationDescription(force_long_description){
-        _log('_getLocationDescription')
+        this._log('_getLocationDescription')
         var current_location = this._getCurrentLocation(),
             description = ''
 
@@ -462,7 +462,7 @@ module.exports = class Engine {
      * @return {object}
      */
     _getItem(location, name){
-        _log('_getItem')
+        this._log('_getItem')
         return location[this._getItemName(name)]
     }
 
@@ -473,7 +473,7 @@ module.exports = class Engine {
      * @return {string}
      */
     _getItemName(name){
-        _log('_getItemName')
+        this._log('_getItemName')
         var return_string = ''
         if(this._rom.items[name]){
             return_string = name
@@ -495,7 +495,7 @@ module.exports = class Engine {
      * @return {integer}
      */
     _getItemLimitQuantity(item){
-        _log('_getItemLimitQuantity')
+        this._log('_getItemLimitQuantity')
         var quantity = item.quantity
         // Limit trumps quantity; -1 is Infinite
         if((item.limit === -1 || item.quantity > item.limit) && item.limit > -1 ){
@@ -511,7 +511,7 @@ module.exports = class Engine {
      * @return {string}
      */
     _itemsToString(items){
-        _log('_itemsToString')
+        this._log('_itemsToString')
         var return_string = ''
 
         if(!Object.keys(items).length) return ''
@@ -569,7 +569,7 @@ module.exports = class Engine {
      * @return {string}
      */
     _interactWithItem(interaction, item){
-        _log('_interactWithItem')
+        this._log('_interactWithItem')
         var location = this._getCurrentLocation(),
             return_string = ''
 
@@ -590,7 +590,7 @@ module.exports = class Engine {
      * @return void 
      */
     _moveItem(action, start_location, end_location){
-        _log('_moveItem')
+        this._log('_moveItem')
         // Get the resolved name incase the display name was used
         var name = this._getItemName(this._command.subject)
         // Get origin item
@@ -626,7 +626,7 @@ module.exports = class Engine {
      * Action Hook
      */
     _actionHook(options){
-        _log('_actionHook')
+        this._log('_actionHook')
         var method = this._command.action + 'Action'
         if(this._rom.actions[method]){
             return this._rom.actions[method]({
@@ -648,7 +648,7 @@ module.exports = class Engine {
      * Die Action
      */
     _dieAction(){
-        _log('_dieAction')
+        this._log('_dieAction')
         // Simply remove the player from the game
         delete this._game.players[this._player.id]
 
@@ -661,7 +661,7 @@ module.exports = class Engine {
      * Drop Action
      */
     _dropAction(){
-        _log('_dropAction')
+        this._log('_dropAction')
         var return_string = `You do not have a ${this._command.subject} to drop.`
         if(!this._command.subject) return 'What do you want to drop?'
 
@@ -682,7 +682,7 @@ module.exports = class Engine {
      * Go Action
      */
     _goAction(){
-        _log('_goAction')
+        this._log('_goAction')
         var return_string = ''
         if(!this._command.subject) return 'Where do you want to go?'
 
@@ -721,7 +721,7 @@ module.exports = class Engine {
      * Inventory Action
      */
     _inventoryAction(){
-        _log('_inventoryAction')
+        this._log('_inventoryAction')
         var inventory = '',
             return_string = ''
 
@@ -748,7 +748,7 @@ module.exports = class Engine {
      * Look Action
      */
     _lookAction(){
-        _log('_lookAction')
+        this._log('_lookAction')
         if(!this._command.subject){
             return this._getLocationDescription(true)
         }
@@ -786,7 +786,7 @@ module.exports = class Engine {
      * Take Action
      */
     _takeAction(){
-        _log('_takeAction')
+        this._log('_takeAction')
         var return_string = `Best just to leave the ${this._command.subject} as it is.`
 
         if(!this._command.subject) return 'What do you want to take?'
@@ -809,7 +809,7 @@ module.exports = class Engine {
      * Use Action
      */
     _useAction(){
-        _log('_useAction')
+        this._log('_useAction')
         var return_string = 'Can\'t do that.',
             name = this._getItemName(this._command.subject),
             method = `use${upperFirst(name)}`
@@ -828,7 +828,7 @@ module.exports = class Engine {
      * @return String
      */
     run(){
-        _log('run')
+        this._log('run')
         // Load a game
         if(this._command.action === 'load'){
             return_string = this._loadRom()
