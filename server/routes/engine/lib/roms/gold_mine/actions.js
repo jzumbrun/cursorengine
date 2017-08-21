@@ -8,7 +8,7 @@ module.exports.endAction = (player) => {
     player.game_over = true
 }
 
-module.exports.useLightSource = (player) => {
+module.exports.useHelmet = (player) => {
     player.light_source = true
     return 'You click on the light attached to the helmet.'
 }

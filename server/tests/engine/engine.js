@@ -1,7 +1,7 @@
 const fs = require('fs'),
 	path = require('path')
     assert = require('assert'),
-    engine = require('../../routes/engine/lib/engine.js')
+    Engine = require('../../routes/engine/lib/engine.js')
 
 /**
  * Engine
@@ -9,13 +9,16 @@ const fs = require('fs'),
  */
 describe('Engine', () => {
     function run(command){
-        return engine.run(command, 'test12345', true)
+        var engine = new Engine()
+        engine.setPlayer('test12345', 'Dude It')
+        engine.setCommand(command)
+        return engine.run()
     }
 
     describe('empty value', () => {
         it('should list the name of all roms', () => {
-            var result = run('')
-            var match = result.match(/gold_mine/)
+            var result = run(''),
+                match = result.match(/gold_mine/g)
             assert.equal(match[0], 'gold_mine')
         })
     })
@@ -23,7 +26,7 @@ describe('Engine', () => {
     describe('load gold_mine', () => {
         it('should load the gold_mine rom', () => {
             var result = run('load gold_mine')
-            var match = result.match(/Welcome to the Crooked Gulch Gold Mine/)
+            var match = result.match(/Welcome to the Crooked Gulch Gold Mine/g)
             assert.equal(match[0], 'Welcome to the Crooked Gulch Gold Mine')
         })
     })
@@ -31,7 +34,7 @@ describe('Engine', () => {
     describe('look', () => {
         it('should describe the Mine Entrance', () => {
             var result = run('look')
-            var match = result.match(/You stand at the/)
+            var match = result.match(/You stand at the/g)
             assert.equal(match[0], 'You stand at the')
         })
     })
@@ -39,7 +42,7 @@ describe('Engine', () => {
     describe('look at sign', () => {
         it('should describe the sign', () => {
             var result = run('look at sign')
-            var match = result.match(/The sign reads/)
+            var match = result.match(/The sign reads/g)
             assert.equal(match[0], 'The sign reads')
         })
     })
@@ -48,15 +51,17 @@ describe('Engine', () => {
         it('should take the helmet', () => {
             var result = run('take helmet')
             console.log(result)
-            var match = result.match(/helmet taken/)
+            var match = result.match(/helmet taken/g)
             assert.equal(match[0], 'helmet taken')
         })
     })
 
-    after(() => {
-        // Clean up
-        fs.unlinkSync(`./routes/engine/lib/saves/test12345.active.json`)
-	    fs.unlinkSync(`./routes/engine/lib/saves/test12345.gold_mine.json`)
+    describe('delete gold_mine', () => {
+        it('should delete the saved gold_mine game', () => {
+            var result = run('delete gold_mine with 321ce123')
+            var match = result.match(/gold_mine/g)
+            assert.equal(match[0], 'gold_mine')
+        })
     })
 
 })

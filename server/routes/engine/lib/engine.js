@@ -3,6 +3,8 @@ const fs = require('fs'),
     path = require('path'),
     cloneDeep = require('lodash/cloneDeep'),
     forEach = require('lodash/forEach'),
+    upperFirst = require('lodash/upperFirst'),
+    config = require('../../../config'),
     parser = require('./parser.js')
 
 /**
@@ -30,7 +32,7 @@ module.exports = class Engine {
 
         // The active player's info
         // This object IS MUTABLE
-        // This will be a reference in the saved players list
+        // this._player IS A REFERENCE to this._game.players[this._player.id]
         this._player = null
 
         // The live game data
@@ -120,15 +122,14 @@ module.exports = class Engine {
 
     /**
      * Set Save
-     * @param {object} name
      */
-    _setSave(name){
+    _setSave(){
         // Once set, do not change it!
         if(this._save === null){
 
             try{
                 // Load the saved game
-                var save = require(`./saves/.${name}.json`)
+                var save = require(`./saves/${this._rom.info.name}.json`)
 
                 // Make it immutable!
                 Object.freeze(save)
@@ -147,10 +148,10 @@ module.exports = class Engine {
 
         // Merge from save
         if(this._save){
-            this._game = deepClone(this._save)
+            this._game = cloneDeep(this._save)
             // See if the player is in the game; add them if not
             if(!this._save.players[this._player.id]){
-                this._game.players = this._mergePlayerOntoSavedPlayers()
+                 this._mergePlayerOntoSavedPlayers()
             }
             // Update the player from the saved player
             else{
@@ -178,7 +179,9 @@ module.exports = class Engine {
      */
     _mergeSavedPlayerOntoPlayer(){
         // Keep this as a reference
-        this._player = this._save.players[this._player.id]
+        this._player = cloneDeep(this._save.players[this._player.id])
+        // Maintain the player to game player reference
+        this._game.players[this._player.id] = this._player
     }
 
     /**
@@ -192,7 +195,8 @@ module.exports = class Engine {
         // Add player object on to save players list
         players[this._player.id] = this._mergeRomPlayerOntoPlayer()
 
-        return players
+        // Maintain the player to game player reference
+        this._game.players = players
     }
 
     /**
@@ -275,7 +279,7 @@ module.exports = class Engine {
             this._saveGame()
             
             // Save the active rom for the user
-            fs.writeFileSync(`${path.resolve(__dirname)}/saves/${this._player.id}.json`, JSON.stringify({active_game: this._command.subject}))
+            fs.writeFileSync(`${path.resolve(__dirname)}/saves/${this._player.id}.json`, JSON.stringify({active_game: this._command.subject}, null, 2))
 
             return this._rom.info.intro_text + '\n' + this._getLocationDescription()
         }
@@ -286,7 +290,23 @@ module.exports = class Engine {
 
     _saveGame(){
         // Save the player data
-        fs.writeFileSync(`${path.resolve(__dirname)}/saves/${this._rom.info.name}.json`, JSON.stringify(this._game))
+        fs.writeFileSync(`${path.resolve(__dirname)}/saves/${this._rom.info.name}.json`, JSON.stringify(this._game, null, 2))
+    }
+
+    _deleteSavedGame(){
+        if (!this._command.subject) return "Specify saved game to delete."
+
+        // Delete the saved game
+        try {
+
+            if(this._command.object != config.access) return 'You do not have access to that command.'
+
+            fs.unlinkSync(`${path.resolve(__dirname)}/saves/${this._player.id}.json`)
+            fs.unlinkSync(`${path.resolve(__dirname)}/saves/${this._command.subject}.json`)
+            return `${this._command.subject} deleted.`
+        } catch(error) {
+            return `${this._command.subject} is not a saved game.`
+        }
     }
 
     // ======= Helpers =======
@@ -297,14 +317,14 @@ module.exports = class Engine {
      */
     _checkForGameEnd(return_string){
         if(this._player.game_over){
-        return_string = return_string + '\n' + game.outro_text
+            return_string = return_string + '\n' + this._game.outro_text
             this._dieAction()
         }
         return return_string
     }
 
     _engineInterface(game, command){
-        return actions[command.action](game, command)
+        return actions[this._command.action](game, command)
     }
 
     _exitsToString(exits){
@@ -358,11 +378,10 @@ module.exports = class Engine {
      * @return {integer}
      */
     _getPlayerMapVisits(location){
-        try{
+        if(this._player.map[location] && this._player.map[location].visits){
             return this._player.map[location].visits
-        } catch(playerMapVisitsError){
-            return 0
         }
+        return 0
     }
 
     /**
@@ -389,31 +408,35 @@ module.exports = class Engine {
         }
         // Just list the name since we have been here before 
         else {
-            description = current_location.display_name
+            description = current_location.description
         }
 
         // Prepend image
-        if(current_location.image){
+        if(config.graphical && current_location.image){
             description = `{[${current_location.image}]} ${description}`
         }
 
         return description
     }
 
-    _getItem(itemLocation, itemName){
-        return itemLocation[this._getItemName(itemLocation, itemName)]
+    _getItem(location, name){
+        return location[this._getItemName(name)]
     }
 
-    _getItemName(itemLocation, itemName){
-        if(itemLocation[itemName] !== undefined) {
-            return itemName
-        } else {
-            for(let item in itemLocation){
-                if(itemLocation[item].displayName.toLowerCase() === itemName){
-                    return item
-                }
-            }
+    _getItemName(name){
+        var return_string = ''
+        if(this._rom.items[name]){
+            return_string = name
         }
+        else{
+            forEach(this._rom.items, (item, item_name) => {
+                if(item.display_name.toLowerCase() === name){
+                    return_string = item_name
+                }
+            })
+        }
+        
+        return return_string
     }
 
     /**
@@ -424,7 +447,7 @@ module.exports = class Engine {
     _getItemLimitQuantity(item){
         var quantity = item.quantity
         // Limit trumps quantity; -1 is Infinite
-        if((item.quantity > item.limit === -1 || item.quantity > item.limit) && item.limit > -1 ){
+        if((item.limit === -1 || item.quantity > item.limit) && item.limit > -1 ){
             quantity = item.limit
         }
 
@@ -487,37 +510,51 @@ module.exports = class Engine {
         return return_string
     }
 
-    _interact(interaction, subject){
-        try{
-            return this._getCurrentLocation().items[subject].interactions[interaction]
-        } catch(error) {
-            return this._getCurrentLocation().interactables[subject][interaction]
+    /**
+     * Iteract with Item
+     * 
+     * @param {string} item 
+     * @return {string}
+     */
+    _interactWithItem(interaction, item){
+        var location = this._getCurrentLocation(),
+            return_string = ''
+
+        // From item
+        if(this._rom.items && this._rom.items[item] && this._rom.items[item][interaction]){
+            return_string = this._rom.items[item][interaction]
         }
+
+        return return_string
     }
 
-    _moveItem(action, itemName, startLocation, endLocation){
-        var itemName = this._getItemName(startLocation, itemName)
-        var itemAtOrigin = this._getItem(startLocation, itemName)
+    _moveItem(action, start_location, end_location){
+        // Get the resolved name incase the display name was used
+        var name = this._getItemName(this._command.subject)
+        // Get origin item
+        var item_at_origin = this._getItem(start_location, name)
 
-        if(itemAtOrigin === undefined){
+        if(item_at_origin === undefined){
             throw 'itemDoesNotExist'
         }
 
-        var itemAtDestination = this._getItem(endLocation, itemName)
+        // Get desination item
+        var item_at_destination = this._getItem(end_location, name)
 
-        if(itemAtDestination === undefined) {
-            endLocation[itemName] = {}
-            endLocation[itemName].quantity = 1
+        // Desitnation does not have the item so build it
+        if(item_at_destination === undefined) {
+            end_location[name] = {}
+            end_location[name].quantity = 1
         } else {
-            ++endLocation[itemName].quantity
+            end_location[name].quantity++
         }
 
-        if (itemAtOrigin.hasOwnProperty('quantity')){
-            --itemAtOrigin.quantity
+        if (item_at_origin.quantity > 0){
+            item_at_origin.quantity--
 
             // Remove item from the player if none left
-            if(itemAtOrigin.quantity && action == 'drop'){
-                delete startLocation[itemName]
+            if(action == 'drop'){
+                delete start_location[name]
             }
         }
 
@@ -525,138 +562,166 @@ module.exports = class Engine {
 
     // ======= Actions =======
 
+    /**
+     * Die Action
+     */
     _dieAction(){
         delete this._game.players[this._player.id]
         return 'You are dead'
     }
 
+    /**
+     * Drop Action
+     */
     _dropAction(){
-        if(!command.subject){
-            return 'What do you want to drop?'
+        var return_string = `You do not have a ${this._command.subject} to drop.`
+        if(!this._command.subject) return 'What do you want to drop?'
+
+        return_string = this._interactWithItem('drop', this._command.subject)
+
+        if(!return_string){
+            var current_location = this._getCurrentLocation()
+            this._moveItem('drop', this._player.inventory, current_location.items)
+            return_string = this._command.subject + ' dropped'
         }
-        try{
-            return this._interact('drop', command.subject)
-        } catch(error) {
-            try {
-                var current_location = this._getCurrentLocation()
-                this._moveItem('drop', command.subject, game.player.inventory, current_location.items)
-                var item = this._getItem(current_location.items, command.subject)
-                return command.subject + ' dropped'
-            } catch(error2){
-                return `You do not have a ${command.subject} to drop.`
-            }
-        }
+        
+        return return_string
     }
 
+    /**
+     * Go Action
+     */
     _goAction(){
-        if(!command.subject){
-            return 'Where do you want to go?'
+        var return_string = ''
+        if(!this._command.subject) return 'Where do you want to go?'
+
+        var location = this._getCurrentLocation(),
+            player_destination = null
+    
+        // Collect exits
+        if(location.exits && location.exits[this._command.subject].destination){
+            player_destination = location.exits[this._command.subject].destination
+         
         }
-        var exits = this._getCurrentLocation().exits
-        var player_destination = null
-        try {
-            player_destination = exits[command.subject].destination
-        } catch (error) {
-            for(let exit in exits){
-                let exitObject = exits[exit]
-                if(exitObject.displayName.toLowerCase() === command.subject){
-                    player_destination = exitObject.destination
+        else {
+            forEach(location.exits, (exit) => {
+                if(exit.display_name.toLowerCase() === this._command.subject){
+                    player_destination = exit.destination
                 }
-            }
-        }
-        if(player_destination === null){
-            return 'You can\'t go there.'
+            })
         }
 
-        if(!this._player.map[player_destination]){
-            this._player.map[player_destination] = {visits: 1}
-        }
-        else{
-            this._player.map[player_destination].visits++
+        if(player_destination === null) return 'You can\'t go there.'
+
+        // Call the room teardown
+        if (this._rom.actions[`${player_destination}Teardown`]){
+            this._rom.actions[`${player_destination}Teardown`](this._player, this._game, this._rom)
         }
 
-        if (this._getCurrentLocation().teardown !== undefined){
-            this._getCurrentLocation().teardown()
-        }
-        if (this._rom.actions['endAction']){
-            this._rom.actions['endAction']()
-        }
+        // Set the new destination
         this._player.current_location = player_destination
-        return this._getLocationDescription()
+        return_string = this._getLocationDescription()
+
+        // Update the visits
+        if(!this._player.map[player_destination]) this._player.map[player_destination] = {visits: 1}
+        else this._player.map[player_destination].visits++
+
+        return return_string
     }
 
+    /**
+     * Inventory Action
+     */
     _inventoryAction(){
-        var inventoryList = 'Your inventory contains:'
-        for (var item in game.player.inventory){
-            var itemObject = game.player.inventory[item]
-            var itemName = itemObject.displayName
-            if(itemObject.quantity > 1){
-                itemName = itemName.concat(' x'+itemObject.quantity)
+        var inventory = ''
+
+        forEach(this._player.inventory, (item, name) => {
+            var display_name = this._rom.items[name].display_name
+            if(item.quantity > 0){
+                display_name = `${display_name} [${item.quantity}] `
             }
-            inventoryList = inventoryList.concat('\n'+itemName)
-        }
-        if (inventoryList === 'Your inventory contains:'){
+            inventory = inventory.concat('\n' + display_name)
+        })
+        if (!inventory){
             return 'Your inventory is empty.'
         } else {
-            return inventoryList
+            return `Your inventory contains: ${inventory}`
         }
     }
 
+    /**
+     * Look Action
+     */
     _lookAction(){
         if(!this._command.subject){
             return this._getLocationDescription(true)
         }
-        try {
-            try {
-                var item = this._getItem(this._player.inventory, this._command.subject),
-                    description = item.description
-                if(item.image){
-                    description = `{[${item.image}]} ${description}`
-                }
-                return description
-            } catch (itemNotInInventoryError){
-                var item = this._getItem(this._getCurrentLocation().items, this._command.subject),
-                    description = item.description
-                if(item.image){
-                    description = `{[${item.image}]} ${description}`
-                }
-                return description
-            }
-        } catch(isNotAnItemError) {
-            try {
-                return this._interact('look', this._command.subject)
-            } catch(subjectNotFound
-                ) {
-                return `There is nothing important about the ${command.subject}.`
+
+        // Get item description
+        var item = this._rom.items[this._command.subject],
+            location = this._getCurrentLocation(),
+            return_string = `There is nothing important about the ${this._command.subject}.`
+    
+        // From item
+        if(item){
+            return_string = item.description
+            // Get item image if there is one
+            if(config.graphical && item.image){
+                return_string = `{[${item.image}]} ${return_string}`
             }
         }
+        // From scenery
+        else if(location.scenery){
+            let scenery = location.scenery[this._command.subject]
+            if(scenery){
+                if(scenery.look) return_string = scenery.look
+                // Get item image if there is one
+                if(scenery.image ) return_string = `{[${scenery.image}]} ${return_string}`
+            } 
+
+        }
+
+        return return_string
     }
 
+    /**
+     * Take Action
+     */
     _takeAction(){
-        if(!command.subject){
-            return 'What do you want to take?'
+        var return_string = `Best just to leave the ${this._command.subject} as it is.`
+        if(!this._command.subject) return 'What do you want to take?'
+
+        return_string = this._interactWithItem('take', this._command.subject)
+
+        if(!return_string){
+            var current_location = this._getCurrentLocation()
+            this._moveItem('take', current_location.items, this._player.inventory)
+            return this._command.subject + ' taken'
+
         }
-        try{
-            return this._interact(game, 'take', command.subject)
-        } catch(takeInteractError) {
-            try {
-                this._moveItem('take', command.subject, this._getCurrentLocation().items, game.player.inventory)
-                return command.subject + ' taken'
-            } catch(takeMoveItemError){
-                return 'Best just to leave the ' + command.subject + ' as it is.'
-            }
-        }
+        
+        return return_string
     }
 
+    /**
+     * Use Action
+     */
     _useAction(){
-        if(!command.subject){
-            return 'What would you like to use?'
+        var return_string = '',
+            name = this._getItemName(this._command.subject),
+            method = `use${upperFirst(name)}`
+    
+        if(!this._command.subject) return 'What would you like to use?'
+        
+        if(name && this._rom.actions[method]){
+            return_string = this._rom.actions[method](this._player, this._game, this._rom)
         }
-        try {
-            return this._getItem(game.player.inventory, command.subject).use()
-        } catch (itemNotInInventoryError) {
-            return 'Can\'t do that.'
+        else{
+            return_string = 'Can\'t do that.'
         }
+
+        return return_string
+
     }
 
     /**
@@ -666,8 +731,13 @@ module.exports = class Engine {
      */
     run(){
 
+        // Load a game
         if(this._command.action === 'load'){
             return_string = this._loadRom()
+        }
+        // Delete a game
+        else if(this._command.action === 'delete'){
+            return_string = this._deleteSavedGame()
         }
         else{
 
@@ -677,30 +747,19 @@ module.exports = class Engine {
                 this._setSave()
                 this._setGame()
 
-                // Increment the players commant count
-                this._game.players[this._player.id].command_counter++
-                var player = this._game.players[this._player.id],
-                    method = `_${this._command.action}Action`,
-                    return_string = ''
+                var method = `_${this._command.action}Action`,
+                    return_string = 'I don\'t know how to do that.'
+
+                // Increment the players command count
+                this._player.command_counter++
 
                 // Try the rom actions first
                 if(this._rom[method]){
-                    return_string = this._rom[method](player, this._game, this._rom, this._engineInterface)
+                    return_string = this._rom[method](this._player, this._game, this._rom, this._engineInterface)
                 }
                 // Then try the engine actions
                 else if(this[method]){
                     return_string = this[method]()
-                }
-                // Then let the user know they suck at typing the things
-                else{
-                    return_string = this._interact(command.action, command.subject)
-                }
-
-                if(return_string === undefined){
-                    return_string = "I don't know how to do that."
-                } else {
-                    let location_string = this._getCurrentLocation().description
-                    if(location_string) return_string = location_string
                 }
 
                 // Check to see if the player is dead

@@ -28,7 +28,11 @@ config.defaults = {
         },
         from: 'CursorEngine <postmaster@cursorengine.com>',
         subject: 'CursorEngine'
-    }
+    },
+
+    // Must me lowecase number/letter combo
+    access: '321ce123',
+    graphical: true
 }
 
 /** DEVELOPMENT **/
