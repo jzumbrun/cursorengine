@@ -1,4 +1,4 @@
-POST http://localhost:7777/engine
+POST http://ec2-34-195-108-120.compute-1.amazonaws.com/engine
 content-type: application/x-www-form-urlencoded
 
-user_id=U2147483697&text=take helmet
+user_id=U2147483697&user_name=Dude It&text=load gold_mine
