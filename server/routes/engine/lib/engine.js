@@ -93,7 +93,19 @@ module.exports = class Engine {
      * Log
      */
     _log(data){
-        console.log(data)
+        if(config.log) console.log(data)
+    }
+
+    /**
+     * Dequire
+     * 
+     * require an non-cached file
+     * @params {string} module
+     * @return mixed
+     */
+    _dequire(module){
+        delete require.cache[require.resolve(module)]
+        return require(module)
     }
 
     /**
@@ -108,7 +120,7 @@ module.exports = class Engine {
             try {
                 // Load the active game from the player data
                 if(name === undefined){
-                    name = require(`./saves/${this._player.id}.json`).active_game
+                    name = this._dequire(`./saves/${this._player.id}.json`).active_game
                 }
                 var rom = {
                     actions: require(`./roms/${name}/actions.js`),
@@ -139,7 +151,7 @@ module.exports = class Engine {
 
             try{
                 // Load the saved game
-                var save = require(`./saves/${this._rom.info.name}.json`)
+                var save = this._dequire(`./saves/${this._rom.info.name}.json`)
 
                 // Make it immutable!
                 Object.freeze(save)

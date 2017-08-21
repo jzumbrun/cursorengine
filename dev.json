@@ -7,8 +7,8 @@
     "max_memory_restart" : "100M",
     "merge_logs"         : true,
     "watch"              : ["server"],
-    "ignore_watch"       : ["server/node_modules"],
-    "watch_options"      : {
+    "ignore_watch"       : ["server/node_modules", "server/routes/engine/lib/saves"],
+        "watch_options"      : {
         "usePolling": true
     }
   }]
