@@ -1,10 +1,41 @@
 {
 	"helmet" : {
+		"type" : "inventory",
 		"display_name" : "Miner Helmet",
 		"image" : "https://images-na.ssl-images-amazon.com/images/I/51J%2BdZwF49L.jpg",
 		"description" : "A trusty old miner helmet covered in minor dents. Still seems sturdy and the light works.",
         "quantity" : -1,
         "limit" : 1,
 		"hidden" : true
+	},
+	"golden_key" : {
+		"type" : "inventory",
+		"display_name" : "Golden Key",
+		"image" : "http://img07.deviantart.net/71be/i/2012/096/f/2/a_golden_key_by_amalus-d4v6gen.png",
+		"description" : "An old golden key.",
+        "quantity" : 1,
+        "limit" : 1,
+		"hidden" : false
+	},
+	"silver_key" : {
+		"type" : "inventory",
+		"display_name" : "Silver Key",
+		"image" : "https://www.charmfactory.com/wp-content/uploads/2016/12/06192.jpg",
+		"description" : "An old silver key.",
+        "quantity" : 1,
+        "limit" : 1,
+		"hidden" : false
+	},
+	"tunnel_exit_outside" : {
+		"type" : "door",
+		"description" : "An rust door blocks the way in. Looks to need two keys.",
+		"open" : false,
+		"locked" : true,
+		"multiplayer": true,
+		"keys" : {
+			"silver_key": "",
+			"golden_key": ""
+		}
 	}
+
 }

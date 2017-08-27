@@ -6,4 +6,5 @@ const Engine = require('./server/routes/engine/lib/engine'),
 var engine = new Engine()
 engine.setPlayer('test12345', 'Dude It')
 engine.setCommand(command)
-console.log(engine.run())
+engine.run()
+console.log(engine.getResponse().message)

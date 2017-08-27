@@ -12,6 +12,10 @@
 			"helmet" : {
 				"quantity" : -1,
 				"limit" : 1
+			},
+			"golden_key" : {
+				"quantity" : 1,
+				"limit" : 1
 			}
 		},
 		"exits" : {
@@ -24,10 +28,17 @@
 	"tunnel" : {
 		"display_name" : "Tunnel",
 		"description" : "It is dimly lit here and look much darker further back.",
+		"items" : {
+			"silver_key" : {
+				"quantity" : 1,
+				"limit" : 1
+			}
+		},
 		"exits" : {
 			"outside" : {
 				"display_name" : "Outside",
-				"destination" : "mine_entrance"
+				"destination" : "mine_entrance",
+				"item" : "tunnel_exit_outside"
 			},
 			"deeper" : {
 				"display_name" : "Deeper",

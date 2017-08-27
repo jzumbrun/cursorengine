@@ -1,6 +1,7 @@
 // Requires
 const fs = require('fs'),
     path = require('path'),
+    isObject = require('lodash/isObject'),
     cloneDeep = require('lodash/cloneDeep'),
     forEach = require('lodash/forEach'),
     upperFirst = require('lodash/upperFirst'),
@@ -13,7 +14,7 @@ const fs = require('fs'),
  * Loads active game into memory if it can find one
  *   for the user, otherwise it lists available games
  * Take the parser commands and feeds them throught the rom
- *   actions or through the engine actions
+ *   hooks or through the engine hooks
  *
  * Always returns a string for the main run method
  *
@@ -49,9 +50,14 @@ module.exports = class Engine {
         // Once this object is "filled", it will be frozen
         this._rom = null
 
-        // The textual command we will be using to drive actions
+        // The textual command we will be using to drive hooks
         // Once this object is "filled", it will be frozen
         this._command = null
+
+        // The final response object
+        this._response = {
+            message: 'I don\'t know how to do that.'
+        }
 
     }
 
@@ -87,6 +93,15 @@ module.exports = class Engine {
         }
     }
 
+    /**
+     * Get Response
+     *
+     * @return {object}
+     */
+    getResponse(){
+        return this._response
+    }
+
     // ========= PRIVATE =========
 
     /**
@@ -94,6 +109,15 @@ module.exports = class Engine {
      */
     _log(data){
         if(config.log) console.log(data)
+    }
+
+    /**
+     * Set Response Message
+     * @param {string} string 
+     * @return void
+     */
+    _setResponseMessage(string){
+        this._response.message = string
     }
 
     /**
@@ -123,7 +147,7 @@ module.exports = class Engine {
                     name = this._dequire(`./saves/${this._player.id}.json`).active_game
                 }
                 var rom = {
-                    actions: require(`./roms/${name}/actions.js`),
+                    hooks: require(`./roms/${name}/hooks.js`),
                     info: require(`./roms/${name}/info.json`),
                     items: require(`./roms/${name}/items.json`),
                     map: require(`./roms/${name}/map.json`),
@@ -189,6 +213,9 @@ module.exports = class Engine {
                 map: this._getSavableMapFromRom()
             }
         }
+
+        // Make quick reference to the room players
+        this._setRoomPlayers()
 
     }
 
@@ -260,6 +287,21 @@ module.exports = class Engine {
         // saved object much smaller
         forEach(map, (room, name) => {
             savable_map[name] = {items: room.items}
+
+            // Assign the exits blocked state
+            if(room.exits){
+                forEach(room.exits, (exit, exit_name) => {
+                    let location = savable_map[name]
+                    if(!isObject(location.exits)){
+                        location.exits = {}
+                        location.exits[exit_name] = {}
+                    }
+        
+                    if(exit.blocked){
+                        location.exits[exit_name].blocked = exit.blocked
+                    }
+                })
+            }
         })
 
         return savable_map
@@ -277,11 +319,11 @@ module.exports = class Engine {
             })
         }catch(error){
             this._log(error)
-            return 'Error loading rom directory.'
+            return this._setResponseMessage('Error loading rom directory.')
         }
 
         if (roms.length === 0){
-            return 'No roms found.'
+            return this._setResponseMessage('No roms found.')
         }
 
         var roms_formated = 'Available Roms: \n'
@@ -291,17 +333,18 @@ module.exports = class Engine {
                 roms_formated = roms_formated.concat('\n')
             }
         })
-        return roms_formated
+        return this._setResponseMessage(roms_formated)
     }
 
     /**
      * Load Rom
      * 
-     * @return {string}
+     * @return void
      */
     _loadRom(){
         this._log('_loadRom')
-        if (!this._command.subject) return "Specify game to load."
+        if (!this._command.subject)
+            return this._setResponseMessage('Specify game to load.')
 
         this._setRom(this._command.subject)
         // See if we have a valid rom
@@ -313,16 +356,16 @@ module.exports = class Engine {
             try{
                 // Save the active rom for the user
                 fs.writeFileSync(`${path.resolve(__dirname)}/saves/${this._player.id}.json`, JSON.stringify({active_game: this._command.subject}, null, 2))
+                return this._setResponseMessage(this._rom.info.intro_text + '\n' + this._getLocationDescription())
 
-            }catch(error){
+            } catch(error){
                 this._log(error)
-                return 'Error loading rom file for ' + this._command.subject
+                return this._setResponseMessage('Error loading rom file for ' + this._command.subject)
             }
 
-            return this._rom.info.intro_text + '\n' + this._getLocationDescription()
         }
         
-        return 'Could not load ' + this._command.subject
+        return this._setResponseMessage('Could not load ' + this._command.subject)
 
     }
 
@@ -333,25 +376,26 @@ module.exports = class Engine {
             fs.writeFileSync(`${path.resolve(__dirname)}/saves/${this._rom.info.name}.json`, JSON.stringify(this._game, null, 2))
         }catch(error){
             this._log(error)
-            return `Error writing ${this._rom.info.name} to file.`
+            return this._setResponseMessage(`Error writing ${this._rom.info.name} to file.`)
         }
     }
 
     _deleteSavedGame(){
         this._log('_deleteSavedGame')
-        if (!this._command.subject) return "Specify saved game to delete."
+        if (!this._command.subject) return this._setResponseMessage('Specify saved game to delete.')
 
         // Delete the saved game
         try {
 
-            if(this._command.object != config.access) return 'You do not have access to that command.'
+            if(this._command.object != config.access) 
+                return this._setResponseMessage('You do not have access to that command.')
 
             fs.unlinkSync(`${path.resolve(__dirname)}/saves/${this._player.id}.json`)
             fs.unlinkSync(`${path.resolve(__dirname)}/saves/${this._command.subject}.json`)
-            return `${this._command.subject} deleted.`
+            return this._setResponseMessage(`${this._command.subject} deleted.`)
         } catch(error) {
             this._log(error)
-            return `${this._command.subject} is not a saved game.`
+            return this._setResponseMessage(`${this._command.subject} is not a saved game.`)
         }
     }
 
@@ -359,20 +403,23 @@ module.exports = class Engine {
 
     /**
      * Check For Game End
-     * @param {string} return_string 
      */
-    _checkForGameEnd(return_string){
+    _checkForGameEnd(){
         this._log('_checkForGameEnd')
         if(this._player.game_over){
-            return_string = return_string + '\n' + this._rom.info.outro_text
+            this._setResponseMessage(this._response.message + '\n' + this._rom.info.outro_text)
             this._dieAction()
         }
-        return return_string
     }
 
+    /**
+     * Exits To String
+     * @param {object} exits 
+     * @return {string}
+     */
     _exitsToString(exits){
         this._log('_exitsToString')
-        var return_string = ''
+        var message = ''
 
         if(Object.keys(exits).length === 0) return ''
 
@@ -383,28 +430,28 @@ module.exports = class Engine {
             }
         })
 
-        return_string = ' Exits are '
+        message = ' Exits are '
         if(visible_exits.length === 0){
             return ''
         }
 
         if(visible_exits.length === 1){
-            return_string = ' Exit is '
+            message = ' Exit is '
         }
 
         // Concat all the exits together
         forEach(visible_exits, (exit, i) => {
-            return_string = return_string.concat(exit)
+            message = message.concat(exit)
             if(i === visible_exits.length - 2){
-                return_string = return_string.concat(' and ')
+                message = message.concat(' and ')
             } else if (i === visible_exits.length - 1){
-                return_string = return_string.concat('.')
+                message = message.concat('.')
             } else {
-                return_string = return_string.concat(', ')
+                message = message.concat(', ')
             }
         })
 
-        return return_string
+        return message
     }
 
     /**
@@ -486,19 +533,19 @@ module.exports = class Engine {
      */
     _getItemName(name){
         this._log('_getItemName')
-        var return_string = ''
+        var message = ''
         if(this._rom.items[name]){
-            return_string = name
+            message = name
         }
         else{
             forEach(this._rom.items, (item, item_name) => {
                 if(item.display_name.toLowerCase() === name){
-                    return_string = item_name
+                    message = item_name
                 }
             })
         }
         
-        return return_string
+        return message
     }
 
     /**
@@ -524,7 +571,7 @@ module.exports = class Engine {
      */
     _itemsToString(items){
         this._log('_itemsToString')
-        var return_string = ''
+        var message = ''
 
         if(!Object.keys(items).length) return ''
 
@@ -541,9 +588,9 @@ module.exports = class Engine {
         if(!visible_items.length) return ''
 
         // Set string for visible items concat
-        return_string = ' There are '
+        message = ' There are '
         if(visible_items[0].quantity === 1){
-            return_string = ' There is '
+            message = ' There is '
         }
 
         forEach(visible_items, (item, i) => {
@@ -552,26 +599,26 @@ module.exports = class Engine {
 
             // Got many
             if(quantity > 1){
-                return_string = return_string.concat(`${quantity} ${item.name}s`)
+                message = message.concat(`${quantity} ${item.name}s`)
             }
             // Got only 1
             else if(quantity === 1){
-                return_string = return_string.concat(`a ${item.name}`)
+                message = message.concat(`a ${item.name}`)
             }
             // Got unlimited
             else if(quantity === -1){
-                return_string = return_string.concat(`Unlimited ${item.name}s`)
+                message = message.concat(`Unlimited ${item.name}s`)
             }
 
             if(i === visible_items.length - 2){
-                return_string = return_string.concat(' and ')
+                message = message.concat(' and ')
             } else if (i === visible_items.length - 1){
-                return_string = return_string.concat(' here.')
+                message = message.concat(' here.')
             } else {
-                return_string = return_string.concat(', ')
+                message = message.concat(', ')
             }
         })
-        return return_string
+        return message
     }
 
     /**
@@ -583,14 +630,14 @@ module.exports = class Engine {
     _interactWithItem(interaction, item){
         this._log('_interactWithItem')
         var location = this._getCurrentLocation(),
-            return_string = ''
+            message = ''
 
         // From item
         if(this._rom.items && this._rom.items[item] && this._rom.items[item][interaction]){
-            return_string = this._rom.items[item][interaction]
+            message = this._rom.items[item][interaction]
         }
 
-        return return_string
+        return message
     }
 
     /**
@@ -635,21 +682,31 @@ module.exports = class Engine {
     }
 
     /**
-     * Action Hook
+     * Gett Room Players
      */
-    _actionHook(options){
+    _setRoomPlayers(){
+
+        // Get user in room
+        forEach(this._game.players, (player) => {
+            // Ignore current user
+            if(player.id != this._player.id){
+                // Make sure player is in current room
+                if(player.current_location == this._player.current_location){
+                    this._room_players.push(player)
+                }
+            }
+        })
+
+    }
+
+    /**
+     * Action Hooks
+     */
+    _actionHook(options = []){
         this._log('_actionHook')
-        var method = this._command.action + 'Action'
-        if(this._rom.actions[method]){
-            return this._rom.actions[method]({
-                // Mutables
-                player: this._player, 
-                game: this._game,
-                // Immutables
-                options: cloneDeep(options), 
-                rom: cloneDeep(this._rom), 
-                command: cloneDeep(this._command)
-            })
+        var method = this._command.action + 'ActionHook'
+        if(this._rom.hooks[method]){
+            return this._rom.hooks[method].call(this, options)
         }
         return null
     }
@@ -664,9 +721,8 @@ module.exports = class Engine {
         // Simply remove the player from the game
         delete this._game.players[this._player.id]
 
-        let action_hook = this._actionHook()
-        if(action_hook) return action_hook
-        return 'You are dead'
+        this._setResponseMessage('You are dead')
+        this._actionHook()
     }
 
     /**
@@ -674,20 +730,20 @@ module.exports = class Engine {
      */
     _dropAction(){
         this._log('_dropAction')
-        var return_string = `You do not have a ${this._command.subject} to drop.`
-        if(!this._command.subject) return 'What do you want to drop?'
+        this._setResponseMessage(`You do not have a ${this._command.subject} to drop.`)
 
-        return_string = this._interactWithItem('drop', this._command.subject)
+        if(!this._command.subject)
+            this._setResponseMessage('What do you want to drop?')
 
-        if(!return_string){
+        this._setResponseMessage(this._interactWithItem('drop', this._command.subject))
+
+        if(!this._response.message){
             var current_location = this._getCurrentLocation()
             this._moveItem('drop', this._player.inventory, current_location.items)
-            return_string = this._command.subject + ' dropped'
+            this._setResponseMessage(this._command.subject + ' dropped')
         }
         
-        let action_hook = this._actionHook({return_string: return_string})
-        if(action_hook) return action_hook
-        return return_string
+        this._actionHook()
     }
 
     /**
@@ -695,8 +751,8 @@ module.exports = class Engine {
      */
     _goAction(){
         this._log('_goAction')
-        var return_string = ''
-        if(!this._command.subject) return 'Where do you want to go?'
+        if(!this._command.subject)
+            return this._setResponseMessage('Where do you want to go?')
 
         var location = this._getCurrentLocation(),
             player_destination = null
@@ -707,26 +763,41 @@ module.exports = class Engine {
          
         }
         else {
-            forEach(location.exits, (exit) => {
+            forEach(location.exits, (exit, name) => {
                 if(exit.display_name.toLowerCase() === this._command.subject){
-                    player_destination = exit.destination
+                    // Allowed to enter
+                    if(exit.blocked){
+                        // Has action to unblock
+                        if(this._rom.hooks.goActionExitBlockedHook){
+                            player_destination = this._rom.hooks.goActionExitBlockedHook.call(this, {name: name, exit: exit})
+                        }
+                    }
+                    
+                    // Check again. If blocked the player_destination is just the return string
+                    if(this._game.map[this._player.current_location].exits[name].blocked){
+                        this._setResponseMessage(player_destination)
+                    }
                 }
             })
         }
 
-        if(player_destination === null) return 'You can\'t go there.'
+        // If the exits populated the return string then the player is blocked
+        if(!this._response.message){
+            // If player_destination is null, then the player entered in a wrong exit
+            if(!player_destination) 
+                return this._setResponseMessage('You can\'t go there.')
 
-        // Set the new destination
-        this._player.current_location = player_destination
-        return_string = this._getLocationDescription()
+            // Set the new destination
+            this._player.current_location = player_destination
+            this._setResponseMessage(this._getLocationDescription())
 
-        // Update the visits
-        if(!this._player.map[player_destination]) this._player.map[player_destination] = {visits: 1}
-        else this._player.map[player_destination].visits++
+            // Update the visits
+            if(!this._player.map[player_destination]) this._player.map[player_destination] = {visits: 1}
+            else this._player.map[player_destination].visits++
 
-        let action_hook = this._actionHook({return_string: return_string})
-        if(action_hook) return action_hook
-        return return_string
+            this._actionHook()
+        }
+
     }
 
     /**
@@ -734,8 +805,7 @@ module.exports = class Engine {
      */
     _inventoryAction(){
         this._log('_inventoryAction')
-        var inventory = '',
-            return_string = ''
+        var inventory = ''
 
         forEach(this._player.inventory, (item, name) => {
             var display_name = this._rom.items[name].display_name
@@ -745,15 +815,12 @@ module.exports = class Engine {
             inventory = inventory.concat('\n' + display_name)
         })
         if (!inventory){
-            return_string = 'Your inventory is empty.'
+            this._setResponseMessage('Your inventory is empty.')
         } else {
-            return_string = `Your inventory contains: ${inventory}`
+            this._setResponseMessage(`Your inventory contains: ${inventory}`)
         }
 
-        let action_hook = this._actionHook({return_string: return_string})
-        if(action_hook) return action_hook
-        return return_string
-
+        this._actionHook()
     }
 
     /**
@@ -768,30 +835,28 @@ module.exports = class Engine {
         // Get item description
         var item = this._rom.items[this._command.subject],
             location = this._getCurrentLocation(),
-            return_string = `There is nothing important about the ${this._command.subject}.`
+            this._setResponseMessage(`There is nothing important about the ${this._command.subject}.`)
     
         // From item
         if(item){
-            return_string = item.description
+            this._setResponseMessage(item.description)
             // Get item image if there is one
             if(config.graphical && item.image){
-                return_string = `{[${item.image}]} ${return_string}`
+                this._response.image = item.image
             }
         }
         // From scenery
         else if(location.scenery){
             let scenery = location.scenery[this._command.subject]
             if(scenery){
-                if(scenery.look) return_string = scenery.look
+                if(scenery.look) this._setResponseMessage(scenery.look)
                 // Get item image if there is one
-                if(scenery.image ) return_string = `{[${scenery.image}]} ${return_string}`
+                if(scenery.image) this._response.image = item.image
             } 
 
         }
 
-        let action_hook = this._actionHook({return_string: return_string})
-        if(action_hook) return action_hook
-        return return_string
+        this._actionHook()
     }
 
     /**
@@ -799,22 +864,20 @@ module.exports = class Engine {
      */
     _takeAction(){
         this._log('_takeAction')
-        var return_string = `Best just to leave the ${this._command.subject} as it is.`
+        this._setResponseMessage(`Best just to leave the ${this._command.subject} as it is.`)
 
-        if(!this._command.subject) return 'What do you want to take?'
+        if(!this._command.subject) 
+            return this._setResponseMessage('What do you want to take?')
 
-        return_string = this._interactWithItem('take', this._command.subject)
+        this._setResponseMessage(this._interactWithItem('take', this._command.subject))
 
-        if(!return_string){
+        if(!this._response.message){
             var current_location = this._getCurrentLocation()
             this._moveItem('take', current_location.items, this._player.inventory)
-            return_string = this._command.subject + ' taken'
-
+            this._setResponseMessage(this._command.subject + ' taken')
         }
 
-        let action_hook = this._actionHook({return_string: return_string})
-        if(action_hook) return action_hook
-        return return_string
+        this._actionHook()
     }
 
     /**
@@ -822,32 +885,28 @@ module.exports = class Engine {
      */
     _useAction(){
         this._log('_useAction')
-        var return_string = 'Can\'t do that.',
-            name = this._getItemName(this._command.subject),
-            method = `use${upperFirst(name)}`
     
-        if(!this._command.subject) return 'What would you like to use?'
+        if(!this._command.subject)
+            return this._setResponseMessage('What would you like to use?')
 
-        let action_hook = this._actionHook({name: name, return_string: return_string})
-        if(action_hook) return action_hook
-        return return_string
+        this._actionHook()
 
     }
 
     /**
      * Run
      *
-     * @return String
+     * @return void
      */
     run(){
         this._log('run')
         // Load a game
         if(this._command.action === 'load'){
-            return_string = this._loadRom()
+            this._loadRom()
         }
         // Delete a game
         else if(this._command.action === 'delete'){
-            return_string = this._deleteSavedGame()
+            this._deleteSavedGame()
         }
         else{
 
@@ -857,28 +916,26 @@ module.exports = class Engine {
                 this._setSave()
                 this._setGame()
 
-                var method = `_${this._command.action}Action`,
-                    return_string = 'I don\'t know how to do that.'
+                var method = `_${this._command.action}Action`
 
                 // Increment the players command count
                 this._player.command_counter++
 
                 if(this[method]){
-                    return_string = this[method]()
+                    this[method]()
                 }
 
                 // Check to see if the player is dead
-                return_string = this._checkForGameEnd(return_string)
+                this._checkForGameEnd()
 
                 this._saveGame()
             }
             // We have no valid rom
             else {
-                return_string = this._listRoms()
+                this._listRoms()
             }
         }
 
-        return return_string
     }
 
 }
