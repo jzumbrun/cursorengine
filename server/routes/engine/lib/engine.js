@@ -56,7 +56,8 @@ module.exports = class Engine {
 
         // The final response object
         this._response = {
-            message: 'I don\'t know how to do that.'
+            message: 'I don\'t know how to do that.',
+            image: null
         }
 
     }
@@ -118,6 +119,15 @@ module.exports = class Engine {
      */
     _setResponseMessage(string){
         this._response.message = string
+    }
+
+    /**
+     * Set Response Image
+     * @param {string} string 
+     * @return void
+     */
+    _setResponseImage(string){
+        this._response.image = string
     }
 
     /**
@@ -317,7 +327,7 @@ module.exports = class Engine {
             var roms = fs.readdirSync(path.resolve(__dirname) + '/roms/').filter((dir) => {
                 return dir && dir[0] != '.'
             })
-        }catch(error){
+        } catch(error){
             this._log(error)
             return this._setResponseMessage('Error loading rom directory.')
         }
@@ -507,7 +517,7 @@ module.exports = class Engine {
 
         // Prepend image
         if(config.graphical && current_location.image){
-            description = `{[${current_location.image}]} ${description}`
+            this._setResponseImage(current_location.image)
         }
 
         return description
@@ -834,7 +844,7 @@ module.exports = class Engine {
 
         // Get item description
         var item = this._rom.items[this._command.subject],
-            location = this._getCurrentLocation(),
+            location = this._getCurrentLocation()
             this._setResponseMessage(`There is nothing important about the ${this._command.subject}.`)
     
         // From item

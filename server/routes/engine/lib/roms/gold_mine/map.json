@@ -1,11 +1,11 @@
 {
 	"mine_entrance" : {
 		"display_name" : "Mine Entrance",
-		"image" : "http://ekalatours.com/wp-content/uploads/ekala-eco-tours-Gold-mine-tours-25.jpg",
+		"image" : "http://www.charlottefive.com/wp-content/uploads/2016/04/Photo-1-Credit-Reed-Gold-Mine-State-Historic-Site-North-Carolina-Department-of-Natural-and-Cultural-Resources.jpg",
 		"description" : "You stand at the partially collapsed entrance to the mine. Nearby there is a sign sticking out of a pile of miner helmets.",
 		"scenery" : {
 			"helmets" : { "look" : "It is a pile of miner helmets with lights on them. They seem to still be operational." },
-			"sign" : { "look" : "The sign reads \"Crooked Gulch Gold Mine\" and has a note tacked to the bottom of it." },
+			"sign" : { "look" : "The sign reads \"Reed Gold Mine\" and has a note tacked to the bottom of it." },
 			"note" : { "look" : "Written in an untidy scroll the note reads \"Generator blew. Lights out.\"" }
 		},
 		"items" : {

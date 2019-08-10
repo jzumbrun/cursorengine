@@ -14,7 +14,7 @@ config.defaults = {
 
     chats: {
         slack: {
-            token: 'A1EbXraxCjHNVe044htL9iXC'
+            token: 'SGAj2Ne94YulwFAKc5UVIdqm'
         }
     },
 
@@ -32,7 +32,7 @@ config.defaults = {
 
     // Must me lowecase number/letter combo
     access: '321ce123',
-    graphical: false,
+    graphical: true,
     log: false
 }
 

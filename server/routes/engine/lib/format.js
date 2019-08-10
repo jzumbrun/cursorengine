@@ -2,13 +2,12 @@
 /**
  * Format Slack
  */
-exports.slack = (text) => {
-    var url = text.match(/{\[(.*)\]}/)
+exports.slack = (respone) => {
 
     // Convert images
-    if(url){
-        return {text: text.replace(url[0], ''), attachments: [{image_url: url[1]}]}
+    if(respone.image){
+        return {text: respone.message, attachments: [{image_url: respone.image}]}
     }
 
-    return {text: text}
+    return {text: respone.message}
 }

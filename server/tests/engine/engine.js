@@ -26,8 +26,8 @@ describe('Engine', () => {
     describe('load gold_mine', () => {
         it('should load the gold_mine rom', () => {
             var result = run('load gold_mine')
-            var match = result.match(/Welcome to the Crooked Gulch Gold Mine/g)
-            assert.equal(match[0], 'Welcome to the Crooked Gulch Gold Mine')
+            var match = result.match(/Welcome to the Reed Gold Mine/g)
+            assert.equal(match[0], 'Welcome to the Reed Gold Mine')
         })
     })
 
