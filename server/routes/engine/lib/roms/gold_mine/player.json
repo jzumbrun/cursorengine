@@ -1,7 +1,6 @@
 {
     "id" : "",
     "name" : "",
-    "command_counter" : 0,
     "game_over" : false,
     "current_location" : "mine_entrance",
     "inventory" : {},

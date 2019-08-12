@@ -18,31 +18,31 @@
 				"limit" : 1
 			}
 		},
-		"exits" : {
+		"paths" : {
 			"inside" : {
 				"display_name" : "Inside",
-				"destination" : "tunnel"
+				"location" : "tunnel"
 			}
 		}
 	},
 	"tunnel" : {
 		"display_name" : "Tunnel",
-		"description" : "It is dimly lit here and look much darker further back.",
+		"description" : "It is dimly lit here, and it looks much darker further back.",
 		"items" : {
 			"silver_key" : {
 				"quantity" : 1,
 				"limit" : 1
 			}
 		},
-		"exits" : {
+		"paths" : {
 			"outside" : {
 				"display_name" : "Outside",
-				"destination" : "mine_entrance",
+				"location" : "mine_entrance",
 				"item" : "tunnel_exit_outside"
 			},
 			"deeper" : {
 				"display_name" : "Deeper",
-				"destination" : "end"
+				"location" : "end"
 			}
 		}
 	},
