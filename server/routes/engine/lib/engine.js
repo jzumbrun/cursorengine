@@ -634,6 +634,9 @@ module.exports = class Engine {
     run(){
         this.log('run')
 
+        if(!this.command.action)
+            this.actions.roms()
+
         // Run console actions
         if(this.actions.console_actions.indexOf(this.command.action) > -1)
             return this.actions.route()

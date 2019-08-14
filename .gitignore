@@ -6,3 +6,4 @@ node_modules/
 .http
 .vagrant/
 saves/
+.nyc_output/

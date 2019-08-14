@@ -124,19 +124,15 @@ module.exports = class Actions {
      */
     remove(){
         this.engine.log('remove')
-        if (!this.engine.command.subject) return this.engine.setResponse({message: 'Specify saved game to removed.'})
+        if (!this.engine.command.subject) return this.engine.setResponse({message: 'Specify saved game to remove.'})
 
         // Remove the saved game
         try {
-
-            if(this.engine.command.object != config.access) 
-                return this.engine.setResponse({message: 'You do not have access to that command.'})
 
             fs.unlinkSync(`${path.resolve(__dirname)}/saves/${this.engine.player.id}.json`)
             fs.unlinkSync(`${path.resolve(__dirname)}/saves/${this.engine.command.subject}.json`)
             return this.engine.setResponse({message: `${this.engine.command.subject} removed.`})
         } catch(error) {
-            this.engine.log(error)
             return this.engine.setResponse({message: `${this.engine.command.subject} is not a saved game.`})
         }
 

@@ -1,4 +1,4 @@
-//#!/usr/bin/env node 
+#!/usr/bin/env node 
 
 const Engine = require('./server/routes/engine/lib/engine')
 
@@ -24,7 +24,7 @@ function start() {
         data = data.replace("\n", '')
 
         if(data === 'quit'){
-            console.log("\nThanks for playing the CursorEngIne Console\n")
+            console.log("\nThanks for playing the CursorEng|ne Console\n")
             process.exit()
         }
         else {
