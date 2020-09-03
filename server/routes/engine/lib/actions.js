@@ -22,7 +22,7 @@ module.exports = class Actions {
 
         // Game actions
         this.game_actions = ['look', 'go', 'take', 'drop', 'use', 'inventory']
-        
+
     }
 
     /**
@@ -63,7 +63,7 @@ module.exports = class Actions {
      */
     load(){
         this.engine.log('load')
-    
+
         if (!this.engine.command.subject)
             return this.engine.setResponse({message: 'Specify game to load.'})
 
@@ -145,9 +145,9 @@ module.exports = class Actions {
         this.engine.log('help')
         this.actionHook('Pre')
         let message = "Console actions: "
-            .concat(this.engine.console_actions.join(', '))
+            .concat(this.console_actions.join(', '))
             .concat("\nGame actions: ")
-            .concat(this.engine.game_actions.join(', '))
+            .concat(this.game_actions.join(', '))
 
         this.engine.setResponse({message: message})
         this.actionHook('Post')
@@ -255,14 +255,14 @@ module.exports = class Actions {
         this.actionHook('Pre')
         if(!this.engine.command.subject){
             let location = this.engine.getLocationInfo(true)
-            return this.engine.setResponse({message: location.description, image: location.imae})
+            return this.engine.setResponse({message: location.description, image: location.image})
         }
 
         // Get item description
         var item = this.engine.rom.items[this.engine.command.subject],
             location = this.engine.getCurrentLocation()
             this.engine.setResponse({message: `There is nothing important about the ${this.engine.command.subject}.`})
-    
+
         // From item
         if(item){
             this.engine.setResponse({message: item.description})

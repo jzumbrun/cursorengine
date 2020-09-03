@@ -402,6 +402,14 @@ module.exports = class Engine {
         }
         return 0
     }
+    
+    getPlayerMapDescription(location){
+    	this.log('getPlayerMapDesription')
+    	if(this.player.map[location] && this.player.map[location].description){
+            return this.player.map[location].description
+        }
+        return ''
+    }
 
     /**
      * Get Location Description
@@ -411,9 +419,13 @@ module.exports = class Engine {
      */
     getLocationInfo(force_long_description){
         this.log('getLocation')
-        var current_location = this.getCurrentLocation(),
+        var current_location = cloneDeep(this.getCurrentLocation()),
             description = '',
             image = ''
+
+        if(this.getPlayerMapDescription(this.player.current_location)){
+        	current_location.description = this.getPlayerMapDescription(this.player.current_location)
+        }
 
         if(this.getPlayerMapVisits(this.player.current_location) == 0 || force_long_description){
             description = current_location.description

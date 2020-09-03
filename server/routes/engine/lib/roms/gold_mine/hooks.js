@@ -62,3 +62,10 @@ module.exports.usePostActionHook = function(){
 
     return this.engine.setResponse({message: 'You do not have that item.'})
 }
+
+module.exports.lookPreActionHook = function(){
+
+    if(this.engine.player.current_location == 'tunnel' && this.engine.player.light_source){
+    	this.engine.player.map.tunnel.description = 'The light of the helmet has revieled some writing on the wall.'
+    }
+}
